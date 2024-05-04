@@ -193,6 +193,30 @@ public:
 
                 return false;
             }
+            if (board[destRow][destCol].getType()==Type::Pawn && (destRow==0||destRow==7)){
+                std::cout<<"What would you like to promote to ? (Q,R,N,B)"<<std::endl;
+                Color pawnColor = board[destRow][destCol].getColor();
+                while (true){
+                    char input;
+                    std::cin>>input;
+                    switch(input){
+                        case 'Q':
+                            board[destRow][destCol]=Piece(Type::Queen,pawnColor);
+                            break;
+                        case 'R':
+                            board[destRow][destCol]=Piece(Type::Rook,pawnColor);
+                            break;
+                        case 'N':
+                            board[destRow][destCol]=Piece(Type::Knight,pawnColor);
+                            break;
+                        case 'B':
+                            board[destRow][destCol]=Piece(Type::Bishop,pawnColor);
+                            break;
+                        default:
+                            std::cout<<"Invalid Promotion"<<std::endl;
+                    }
+                }
+            }
             board[destRow][destCol].setMoved();
             if (isKingInCheck(!black)){
                 if(isKingInCheckmate(!black)){
