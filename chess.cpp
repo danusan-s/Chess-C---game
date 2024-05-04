@@ -24,9 +24,10 @@ class Piece
 private:
     Type type;
     Color color;
+    bool hasMoved;
 
 public:
-    Piece(Type t = Type::None, Color c = Color::None) : type(t), color(c) {}
+    Piece(Type t = Type::None, Color c = Color::None) : type(t), color(c), hasMoved(false) {}
 
     Type getType() const
     {
@@ -36,6 +37,14 @@ public:
     Color getColor() const
     {
         return color;
+    }
+
+    bool hasPieceMoved(){
+        return hasMoved;
+    }
+
+    void setMoved(){
+        hasMoved=true;
     }
 };
 
@@ -92,6 +101,7 @@ public:
     {
         for (int i = 0; i < SIZE; ++i)
         {
+            std::cout << 8-i << " ";
             for (int j = 0; j < SIZE; ++j)
             {
                 Piece piece = board[i][j];
@@ -123,6 +133,7 @@ public:
             }
             std::cout << std::endl;
         }
+        std::cout << "  a b c d e f g h"<<std::endl;
     }
     bool movePiece(const std::string &move,bool black)
     {
@@ -164,26 +175,24 @@ public:
 
         // If the move is valid, update the board
 
-        if (isValidMove(sourceRow,sourceCol,destRow,destCol,black)){
+        if (isValidMove(sourceRow,sourceCol,destRow,destCol)){
             Piece temp = board[destRow][destCol];
             board[destRow][destCol]=board[sourceRow][sourceCol];
             board[sourceRow][sourceCol] = Piece();
+            if (board[destRow][destCol].getType()==Type::King){
+                updateKingPosn(destRow,destCol);  
+            }
             if (isKingInCheck(black)){
+                if (board[destRow][destCol].getType()==Type::King){
+                    updateKingPosn(sourceRow,sourceCol);  
+                }
                 board[sourceRow][sourceCol] = board[destRow][destCol];
                 board[destRow][destCol]= temp;
                 std::cout << "That move puts your king in check" << std::endl;
+
                 return false;
             }
-            if (board[destRow][destCol].getType()==Type::King){
-                if (black){
-                    blackKingRow=destRow;
-                    blackKingCol=destCol;
-                }
-                else{
-                    whiteKingRow=destRow;
-                    whiteKingCol=destCol;
-                }
-            }
+            board[destRow][destCol].setMoved();
             if (isKingInCheck(!black)){
                 std::cout << "Check" << std::endl;
                 //check for checkmate, implementation later.
@@ -196,7 +205,18 @@ public:
         return false;
     }
 
-    bool isValidMove(int sourceRow,int sourceCol,int destRow,int destCol,bool black){
+    void updateKingPosn(int destRow,int destCol){
+        if (board[destRow][destCol].getColor()==Color::Black){
+            blackKingRow=destRow;
+            blackKingCol=destCol;
+        }
+        else{
+            whiteKingRow=destRow;
+            whiteKingCol=destCol;
+        }
+    }
+
+    bool isValidMove(int sourceRow,int sourceCol,int destRow,int destCol){
         switch(board[sourceRow][sourceCol].getType()){
             case Type::Pawn:
                 return (isValidPawnMove(sourceRow,sourceCol,destRow,destCol));
@@ -220,14 +240,18 @@ public:
         if (black){
             for (int i=0;i<SIZE;++i){
                 for (int j=0;j<SIZE;++j){
-                    if (isValidMove(i,j,blackKingRow,blackKingCol,!black)) return true;
+                    if (isValidMove(i,j,blackKingRow,blackKingCol)){
+                        return true;
+                    }
                 }
             }
         }
         else{
             for (int i=0;i<SIZE;++i){
                 for (int j=0;j<SIZE;++j){
-                    if (isValidMove(i,j,whiteKingRow,whiteKingCol,!black)) return true;
+                    if (isValidMove(i,j,whiteKingRow,whiteKingCol)){
+                        return true;
+                    }
                 }
             }
         }
@@ -242,7 +266,7 @@ public:
         int direction = (playerColor == Color::White) ? -1:1;
         if (sourceCol==destCol && destPiece.getType()==Type::None){
             if (destRow==sourceRow+direction) return true;
-            if (destRow == sourceRow + 2 * direction && sourceRow == ((playerColor == Color::White) ? 6 : 1)) return true;
+            if (destRow == sourceRow + 2 * direction && !sourcePiece.hasPieceMoved()) return true;
             return false;
         }
         if ((destCol==sourceCol+1 || destCol==sourceCol-1) && destRow==sourceRow+direction){
@@ -329,6 +353,73 @@ public:
 
         int rowDiff= destRow-sourceRow;
         int colDiff = destCol-sourceCol;
+
+        //Castling time
+        if (!sourcePiece.hasPieceMoved() && rowDiff==0){ //since piece hasnt moved,it should be in its own row
+            if (destCol==2){
+                if (board[sourceRow][3].getType()!=Type::None || board[sourceRow][2].getType()!=Type::None || board[sourceRow][1].getType()!=Type::None) return false;
+                if (board[sourceRow][0].getType()==Type::Rook && !board[sourceRow][0].hasPieceMoved()){
+                    Piece rook = board[sourceRow][0];
+                    board[sourceRow][3]= sourcePiece;
+                    board[sourceRow][4]= Piece();
+                    updateKingPosn(sourceRow,3);
+                    if (isKingInCheck(playerColor==Color::Black)){
+                        board[sourceRow][4]=sourcePiece;
+                        board[sourceRow][3]=Piece();
+                        updateKingPosn(sourceRow,4);
+                        return false;
+                    }
+                    board[sourceRow][2]= sourcePiece;
+                    board[sourceRow][3]= Piece();
+                    updateKingPosn(sourceRow,2);
+                    if (isKingInCheck(playerColor==Color::Black)){
+                        board[sourceRow][4]=sourcePiece;
+                        board[sourceRow][2]=Piece();
+                        updateKingPosn(sourceRow,4);
+                        return false;
+                    }
+                    board[sourceRow][4]=sourcePiece;
+                    board[sourceRow][2]=Piece();
+                    updateKingPosn(sourceRow,4);
+                    rook.setMoved();
+                    board[sourceRow][3]= rook;
+                    board[sourceRow][0]= Piece();
+                    return true;
+                }
+            }
+            if (destCol==6){
+                if (board[sourceRow][5].getType()!=Type::None || board[sourceRow][6].getType()!=Type::None) return false;
+                if (board[sourceRow][7].getType()==Type::Rook && !board[sourceRow][7].hasPieceMoved()){
+                    Piece rook = board[sourceRow][7];
+                    board[sourceRow][5]= sourcePiece;
+                    board[sourceRow][4]= Piece();
+                    updateKingPosn(sourceRow,5);
+                    if (isKingInCheck(playerColor==Color::Black)){
+                        board[sourceRow][4]=sourcePiece;
+                        board[sourceRow][5]=Piece();
+                        updateKingPosn(sourceRow,4);
+                        return false;
+                    }
+                    board[sourceRow][6]= sourcePiece;
+                    board[sourceRow][5]= Piece();
+                    updateKingPosn(sourceRow,6);
+                    if (isKingInCheck(playerColor==Color::Black)){
+                        board[sourceRow][4]=sourcePiece;
+                        board[sourceRow][6]=Piece();
+                        updateKingPosn(sourceRow,4);
+                        return false;
+                    }
+                    board[sourceRow][4]=sourcePiece;
+                    board[sourceRow][6]=Piece();
+                    updateKingPosn(sourceRow,4);
+                    rook.setMoved();
+                    board[sourceRow][5]= rook;
+                    board[sourceRow][7]= Piece();
+                    return true;
+                }
+            }
+            return false;
+        }
 
         if (abs(rowDiff)>1 || abs(colDiff)>1) return false;
 
