@@ -184,9 +184,15 @@ public:
                     whiteKingCol=destCol;
                 }
             }
+            if (isKingInCheck(!black)){
+                std::cout << "Check" << std::endl;
+                //check for checkmate, implementation later.
+            }
+        }
+        else{
+            std::cout << "That move is invalid" << std::endl;
         }
 
-        //if king in check make sure, king is not in check anymore after move
     }
 
     bool isValidMove(int sourceRow,int sourceCol,int destRow,int destCol,bool black){
@@ -211,8 +217,20 @@ public:
 
     bool isKingInCheck(bool black){
         if (black){
-            
+            for (int i=0;i<SIZE;++i){
+                for (int j=0;j<SIZE;++j){
+                    if (isValidMove(i,j,blackKingRow,blackKingCol,!black)) return true;
+                }
+            }
         }
+        else{
+            for (int i=0;i<SIZE;++i){
+                for (int j=0;j<SIZE;++j){
+                    if (isValidMove(i,j,whiteKingRow,whiteKingCol,!black)) return true;
+                }
+            }
+        }
+        return false;
     }
 
     bool isValidPawnMove(int sourceRow,int sourceCol,int destRow,int destCol){
