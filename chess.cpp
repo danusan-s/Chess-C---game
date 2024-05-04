@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <vector>
 
 enum class Type
 {
@@ -431,15 +432,20 @@ int main()
 {
     Chessboard game;
     game.printBoard();
-    int move=0;
+    std::vector<std::string> moveLog;
     bool black=false;
     while (true){
         std::string input;
         std::cout << "Enter your move:" << std::endl;
         std::cin >> input;
-        if (input=="end") break;
+        if (input=="end"){
+            for (int i=0;i<moveLog.size();++i){
+                std::cout<<moveLog[i]<<std::endl;
+            }
+            break;
+        }
         if (game.movePiece(input,black)){
-            ++move;
+            moveLog.push_back(input);
             black=!black;
             game.printBoard();
         }
