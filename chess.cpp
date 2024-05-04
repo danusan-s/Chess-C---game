@@ -188,11 +188,12 @@ public:
                 std::cout << "Check" << std::endl;
                 //check for checkmate, implementation later.
             }
+            return true;
         }
         else{
             std::cout << "That move is invalid" << std::endl;
         }
-
+        return false;
     }
 
     bool isValidMove(int sourceRow,int sourceCol,int destRow,int destCol,bool black){
