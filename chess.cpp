@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 
+// Enum to classify the type of pieces
 enum class Type
 {
     None,
@@ -13,6 +14,7 @@ enum class Type
     King
 };
 
+// Enum to classify the color of pieces
 enum class Color
 {
     None,
@@ -20,6 +22,7 @@ enum class Color
     White
 };
 
+// Class to identify each piece
 class Piece
 {
 private:
@@ -30,39 +33,47 @@ private:
 public:
     Piece(Type t = Type::None, Color c = Color::None) : type(t), color(c), hasMoved(false) {}
 
+    // Returns the type of piece
     Type getType() const
     {
         return type;
     }
 
+    // Returns the color of piece
     Color getColor() const
     {
         return color;
     }
 
+    // Returns whether the piece has been moved before
     bool hasPieceMoved(){
         return hasMoved;
     }
 
+    // Sets bool hasMoved to true
     void setMoved(){
         hasMoved=true;
     }
 };
 
+// Class to hold the main chessboard and run all operations
 class Chessboard
 {
 private:
     static const int SIZE = 8;
     Piece board[SIZE][SIZE];
 
+    // Variables to keep track of the king's postions
     int blackKingRow;
     int blackKingCol;
     int whiteKingRow;
     int whiteKingCol;
 
+    // Stores previous move (useful for enpassant)
     std::string prevMove;
 
 public:
+    //Initializes the chess board
     Chessboard()
     {
         blackKingRow = 0;
@@ -136,8 +147,17 @@ public:
             }
             std::cout << std::endl;
         }
-        std::cout << "  a b c d e f g h"<<std::endl;
+        std::cout << "# a b c d e f g h"<<std::endl;
     }
+
+    /**
+     * @brief Checks whether the user input is a valid move
+     * 
+     * @param move contains the user's input
+     * @param black indicates if it is black's turn
+     * @return true when the input is valid
+     * @return false when the input is invalid
+     */
     bool movePiece(const std::string &move,bool black)
     {
         // Validate input length
@@ -225,13 +245,6 @@ public:
                 }
             }
             board[destRow][destCol].setMoved();
-            if (isKingInCheck(!black)){
-                if(isKingInCheckmate(!black)){
-                    std::cout<<"Checkmate! "<<(black?"Black":"White")<<" wins!"<<std::endl;
-                    return true;
-                }
-                std::cout << "Check" << std::endl;
-            }
             prevMove=move;
             return true;
         }
@@ -241,17 +254,33 @@ public:
         return false;
     }
 
-    void updateKingPosn(int destRow,int destCol){
-        if (board[destRow][destCol].getColor()==Color::Black){
-            blackKingRow=destRow;
-            blackKingCol=destCol;
+    /**
+     * @brief Updates the private variables that store the king's position (note: does not move the king)
+     * 
+     * @param row New row position of the king
+     * @param col New column position of the king
+     */
+    void updateKingPosn(int row,int col){
+        if (board[row][col].getColor()==Color::Black){
+            blackKingRow=row;
+            blackKingCol=col;
         }
         else{
-            whiteKingRow=destRow;
-            whiteKingCol=destCol;
+            whiteKingRow=row;
+            whiteKingCol=col;
         }
     }
 
+    /**
+     * @brief Determines whether a piece can reach from source to destination in one move
+     * 
+     * @param sourceRow Row of the source
+     * @param sourceCol Column of the source
+     * @param destRow Row of the destination
+     * @param destCol Column of the destination
+     * @return true if the piece can reach the destination in one move
+     * @return false if the piece cannot reach the destination in one move
+     */
     bool isValidMove(int sourceRow,int sourceCol,int destRow,int destCol){
         if (sourceRow==destRow && sourceCol==destCol) return false;
         switch(board[sourceRow][sourceCol].getType()){
@@ -273,6 +302,13 @@ public:
         return false;
     }
 
+    /**
+     * @brief Checks whether the king is in check
+     * 
+     * @param black Indicates whether to look at Black or White's king
+     * @return true if the king is in check
+     * @return false if the king is safe
+     */
     bool isKingInCheck(bool black){
         if (black){
             for (int i=0;i<SIZE;++i){
@@ -295,6 +331,13 @@ public:
         return false;
     }
 
+    /**
+     * @brief Checks whether the king is in checkmate
+     * 
+     * @param black Indicates whether to look at Black or White's king
+     * @return true if the king is in checkmate
+     * @return false if the king can be saved using a move
+     */
     bool isKingInCheckmate(bool black){
         for (int i=0;i<SIZE;++i){
             for (int j=0;j<SIZE;++j){
@@ -324,6 +367,16 @@ public:
         return true;
     }
 
+    /**
+     * @brief Checks whether the move is valid for a pawn piece (Includes double move, En passant)
+     * 
+     * @param sourceRow Row of the source
+     * @param sourceCol Column of the source
+     * @param destRow Row of the destination
+     * @param destCol Column of the destination
+     * @return true if the pawn move is valid
+     * @return false if the pawn move is invalid
+     */
     bool isValidPawnMove(int sourceRow,int sourceCol,int destRow,int destCol){
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
@@ -353,6 +406,16 @@ public:
         return false;
     }
 
+    /**
+     * @brief Checks whether the move is valid for a knight piece
+     * 
+     * @param sourceRow Row of the source
+     * @param sourceCol Column of the source
+     * @param destRow Row of the destination
+     * @param destCol Column of the destination
+     * @return true if the knight move is valid
+     * @return false if the knight move is invalid
+     */
     bool isValidKnightMove(int sourceRow,int sourceCol,int destRow,int destCol){
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
@@ -364,6 +427,16 @@ public:
         return false;
     }
 
+    /**
+     * @brief Checks whether the move is valid for a Bishop piece
+     * 
+     * @param sourceRow Row of the source
+     * @param sourceCol Column of the source
+     * @param destRow Row of the destination
+     * @param destCol Column of the destination
+     * @return true if the bishop move is valid
+     * @return false if the bishop move is invalid
+     */
     bool isValidBishopMove(int sourceRow,int sourceCol,int destRow,int destCol){
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
@@ -389,6 +462,16 @@ public:
         return true;
     }
 
+    /**
+     * @brief Checks whether the move is valid for a rook piece
+     * 
+     * @param sourceRow Row of the source
+     * @param sourceCol Column of the source
+     * @param destRow Row of the destination
+     * @param destCol Column of the destination
+     * @return true if the rook move is valid
+     * @return false if the rook move is invalid 
+     */
     bool isValidRookMove(int sourceRow,int sourceCol,int destRow,int destCol){
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
@@ -418,10 +501,30 @@ public:
         return false;
     }
 
+    /**
+     * @brief Checks whether the move is valid for a Queen piece (Combination of rook,bishop)
+     * 
+     * @param sourceRow Row of the source
+     * @param sourceCol Column of the source
+     * @param destRow Row of the destination
+     * @param destCol Column of the destination
+     * @return true if the queen move is valid
+     * @return false if the queen move is invalid
+     */
     bool isValidQueenMove(int sourceRow,int sourceCol,int destRow,int destCol){
         return (isValidBishopMove(sourceRow,sourceCol,destRow,destCol) || isValidRookMove(sourceRow,sourceCol,destRow,destCol));
     }
 
+    /**
+     * @brief Checks whether the move is valid for a King piece (Includes castling)
+     * 
+     * @param sourceRow Row of the source
+     * @param sourceCol Column of the source
+     * @param destRow Row of the destination
+     * @param destCol Column of the destination
+     * @return true if the king move is valid
+     * @return false if the king move is invalid or castling under checks
+     */
     bool isValidKingMove(int sourceRow,int sourceCol,int destRow,int destCol){
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
@@ -506,27 +609,57 @@ public:
     }
 };
 
+/**
+ * @brief Prints out the logs
+ * 
+ * @param moveLog Array containg the logs
+ */
+void printLogs(std::vector<std::string>& moveLog){
+    std::cout<< "Move Log:" << std::endl;
+    for (int i=0;i<moveLog.size();++i){
+        std::cout<<moveLog[i]<<std::endl;
+    }
+}
+
 int main()
 {
+    // Create the main board
     Chessboard game;
+    // Print initial board
     game.printBoard();
+    // Create an array to store moves
     std::vector<std::string> moveLog;
+    // Boolean to keep track of moves
     bool black=false;
+
     while (true){
+        // Get input from user
         std::string input;
         std::cout << "Enter your move:" << std::endl;
         std::cin >> input;
+
+        // If input is end, print out log and exit
         if (input=="end"){
-            std::cout<< "Move Log:" << std::endl;
-            for (int i=0;i<moveLog.size();++i){
-                std::cout<<moveLog[i]<<std::endl;
-            }
+            printLogs(moveLog);
             break;
         }
+
+        // If valid move, add to log, print new board and change turns
         if (game.movePiece(input,black)){
             moveLog.push_back(input);
             black=!black;
             game.printBoard();
+
+            // Check if king is in check
+            if (game.isKingInCheck(black)){
+                // If king is in checkmate, print out log and exit
+                if(game.isKingInCheckmate(black)){
+                    std::cout<<"Checkmate! "<<(black?"Black":"White")<<" wins!"<<std::endl;
+                    printLogs(moveLog);
+                    break;
+                }
+                std::cout << "Check" << std::endl;
+            }
         }
     }
 }
