@@ -198,21 +198,26 @@ public:
             if (board[destRow][destCol].getType()==Type::Pawn && (destRow==0||destRow==7)){
                 std::cout<<"What would you like to promote to ? (Q,R,N,B)"<<std::endl;
                 Color pawnColor = board[destRow][destCol].getColor();
-                while (true){
+                bool done = false;
+                while (!done){
                     char input;
                     std::cin>>input;
                     switch(input){
                         case 'Q':
                             board[destRow][destCol]=Piece(Type::Queen,pawnColor);
+                            done=true;
                             break;
                         case 'R':
                             board[destRow][destCol]=Piece(Type::Rook,pawnColor);
+                            done=true;
                             break;
                         case 'N':
                             board[destRow][destCol]=Piece(Type::Knight,pawnColor);
+                            done=true;
                             break;
                         case 'B':
                             board[destRow][destCol]=Piece(Type::Bishop,pawnColor);
+                            done=true;
                             break;
                         default:
                             std::cout<<"Invalid Promotion"<<std::endl;
