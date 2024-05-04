@@ -431,6 +431,7 @@ public:
         if (!sourcePiece.hasPieceMoved() && rowDiff==0){ //since piece hasnt moved,it should be in its own row
             if (destCol==2){
                 if (board[sourceRow][3].getType()!=Type::None || board[sourceRow][2].getType()!=Type::None || board[sourceRow][1].getType()!=Type::None) return false;
+                if (isKingInCheck(playerColor==Color::Black)) return false;
                 if (board[sourceRow][0].getType()==Type::Rook && !board[sourceRow][0].hasPieceMoved()){
                     Piece rook = board[sourceRow][0];
                     board[sourceRow][3]= sourcePiece;
@@ -460,8 +461,9 @@ public:
                     return true;
                 }
             }
-            if (destCol==6){
+            else if (destCol==6){
                 if (board[sourceRow][5].getType()!=Type::None || board[sourceRow][6].getType()!=Type::None) return false;
+                if (isKingInCheck(playerColor==Color::Black)) return false;
                 if (board[sourceRow][7].getType()==Type::Rook && !board[sourceRow][7].hasPieceMoved()){
                     Piece rook = board[sourceRow][7];
                     board[sourceRow][5]= sourcePiece;
