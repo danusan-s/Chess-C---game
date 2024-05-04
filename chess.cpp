@@ -60,6 +60,8 @@ private:
     int whiteKingRow;
     int whiteKingCol;
 
+    std::string prevMove;
+
 public:
     Chessboard()
     {
@@ -225,6 +227,7 @@ public:
                 }
                 std::cout << "Check" << std::endl;
             }
+            prevMove=move;
             return true;
         }
         else{
@@ -298,13 +301,16 @@ public:
                             Piece temp = board[k][l];
                             board[k][l] = board[i][j];
                             board[i][j] = Piece();
+                            if (board[k][l].getType()==Type::King) updateKingPosn(k,l);
                             if (!isKingInCheck(black)){
                                 board[i][j] = board[k][l]; 
                                 board[k][l] = temp;
+                                if (board[i][j].getType()==Type::King) updateKingPosn(i,j);
                                 return false;
                             }
                             board[i][j] = board[k][l]; 
                             board[k][l] = temp;
+                            if (board[i][j].getType()==Type::King) updateKingPosn(i,j);
                         }
                     }
                 }
@@ -317,15 +323,27 @@ public:
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
         Color playerColor = sourcePiece.getColor();
+
         if (destPiece.getColor()==playerColor) return false;
+
         int direction = (playerColor == Color::White) ? -1:1;
+
         if (sourceCol==destCol && destPiece.getType()==Type::None){
             if (destRow==sourceRow+direction) return true;
             if (destRow == sourceRow + 2 * direction && !sourcePiece.hasPieceMoved()) return true;
             return false;
         }
+
         if ((destCol==sourceCol+1 || destCol==sourceCol-1) && destRow==sourceRow+direction){
             if ((destPiece.getType()!=Type::None)) return true;
+
+            //en passant
+            if (board[sourceRow][destCol].getType()==Type::Pawn && board[sourceRow][destCol].getColor()!=playerColor){
+                if(prevMove[1]==prevMove[3]-2*direction && prevMove[0]==prevMove[2] && prevMove[0]-'a'==destCol){
+                    board[sourceRow][destCol]=Piece();
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -473,7 +491,6 @@ public:
                     return true;
                 }
             }
-            return false;
         }
 
         if (abs(rowDiff)>1 || abs(colDiff)>1) return false;
@@ -493,6 +510,7 @@ int main()
         std::cout << "Enter your move:" << std::endl;
         std::cin >> input;
         if (input=="end"){
+            std::cout<< "Move Log:" << std::endl;
             for (int i=0;i<moveLog.size();++i){
                 std::cout<<moveLog[i]<<std::endl;
             }
