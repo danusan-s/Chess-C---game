@@ -1,0 +1,1 @@
+This is my attempt at creating a chess game using c++. This was simply a project to get familiar with classes and stuff in c++. Future project: a chess engine that solves games, but for now I've stuck to creating the game from scratch.
