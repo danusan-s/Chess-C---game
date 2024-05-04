@@ -195,8 +195,11 @@ public:
             }
             board[destRow][destCol].setMoved();
             if (isKingInCheck(!black)){
+                if(isKingInCheckmate(!black)){
+                    std::cout<<"Checkmate! "<<(black?"Black":"White")<<" wins!"<<std::endl;
+                    return true;
+                }
                 std::cout << "Check" << std::endl;
-                //check for checkmate, implementation later.
             }
             return true;
         }
@@ -218,6 +221,7 @@ public:
     }
 
     bool isValidMove(int sourceRow,int sourceCol,int destRow,int destCol){
+        if (sourceRow==destRow && sourceCol==destCol) return false;
         switch(board[sourceRow][sourceCol].getType()){
             case Type::Pawn:
                 return (isValidPawnMove(sourceRow,sourceCol,destRow,destCol));
@@ -257,6 +261,32 @@ public:
             }
         }
         return false;
+    }
+
+    bool isKingInCheckmate(bool black){
+        for (int i=0;i<SIZE;++i){
+            for (int j=0;j<SIZE;++j){
+                if (black && board[i][j].getColor()!=Color::Black) continue;
+                if (!black && board[i][j].getColor()!=Color::White) continue;
+                for (int k=0;k<SIZE;++k){
+                    for (int l=0;l<SIZE;++l){
+                        if (isValidMove(i,j,k,l)){
+                            Piece temp = board[k][l];
+                            board[k][l] = board[i][j];
+                            board[i][j] = Piece();
+                            if (!isKingInCheck(black)){
+                                board[i][j] = board[k][l]; 
+                                board[k][l] = temp;
+                                return false;
+                            }
+                            board[i][j] = board[k][l]; 
+                            board[k][l] = temp;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     bool isValidPawnMove(int sourceRow,int sourceCol,int destRow,int destCol){
