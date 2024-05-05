@@ -188,23 +188,25 @@ public:
             return false;
         }
 
+        // Check if the piece at the source square is the correct colour based on turn
         if ((black && (board[sourceRow][sourceCol].getColor()== Color::White)) || (!black && (board[sourceRow][sourceCol].getColor()== Color::Black))){
             std::cout << "Invalid move. This piece is not yours." << std::endl;
             return false;
         }
-
-        // Check if the move is valid for the selected piece (not implemented yet)
-        // You need to implement this logic based on the rules of chess
-
-        // If the move is valid, update the board
-
+        
         if (isValidMove(sourceRow,sourceCol,destRow,destCol)){
+
+            // If the move is valid, update the board
             Piece temp = board[destRow][destCol];
             board[destRow][destCol]=board[sourceRow][sourceCol];
             board[sourceRow][sourceCol] = Piece();
+
+            // If the king moved, update king position
             if (board[destRow][destCol].getType()==Type::King){
                 updateKingPosn(destRow,destCol);  
             }
+
+            // If the king is in check after the move, it is invalid and we should revert back
             if (isKingInCheck(black)){
                 if (board[destRow][destCol].getType()==Type::King){
                     updateKingPosn(sourceRow,sourceCol);  
@@ -215,6 +217,8 @@ public:
 
                 return false;
             }
+
+            // If pawn reaches either end of ranks, it can promote to another piece
             if (board[destRow][destCol].getType()==Type::Pawn && (destRow==0||destRow==7)){
                 std::cout<<"What would you like to promote to ? (Q,R,N,B)"<<std::endl;
                 Color pawnColor = board[destRow][destCol].getColor();
@@ -222,6 +226,8 @@ public:
                 while (!done){
                     char input;
                     std::cin>>input;
+
+                    // The user selects the piece they want to promote to;
                     switch(input){
                         case 'Q':
                             board[destRow][destCol]=Piece(Type::Queen,pawnColor);
@@ -244,8 +250,14 @@ public:
                     }
                 }
             }
+
+            // We just moved a piece to destRow, destCol so we set is as moved
             board[destRow][destCol].setMoved();
+
+            // Store the move into prevMove
             prevMove=move;
+
+            // The move is valid and didn't run into any obstructions
             return true;
         }
         else{
@@ -261,6 +273,9 @@ public:
      * @param col New column position of the king
      */
     void updateKingPosn(int row,int col){
+
+        // The king has to be in the position to be updated to retrieve the color
+        // i.e. updateKingPosn after updating the board
         if (board[row][col].getColor()==Color::Black){
             blackKingRow=row;
             blackKingCol=col;
@@ -282,7 +297,11 @@ public:
      * @return false if the piece cannot reach the destination in one move
      */
     bool isValidMove(int sourceRow,int sourceCol,int destRow,int destCol){
+
+        // Can't move to the same square as source
         if (sourceRow==destRow && sourceCol==destCol) return false;
+
+        // Handling move checking based on piece type
         switch(board[sourceRow][sourceCol].getType()){
             case Type::Pawn:
                 return (isValidPawnMove(sourceRow,sourceCol,destRow,destCol));
@@ -310,6 +329,9 @@ public:
      * @return false if the king is safe
      */
     bool isKingInCheck(bool black){
+
+        // Iterate through all pieces and see if they can attack the king
+        // Same color pieces will be returned false by isValidMove
         if (black){
             for (int i=0;i<SIZE;++i){
                 for (int j=0;j<SIZE;++j){
@@ -339,23 +361,39 @@ public:
      * @return false if the king can be saved using a move
      */
     bool isKingInCheckmate(bool black){
+
+        // Iterate through all the squares to find source
         for (int i=0;i<SIZE;++i){
             for (int j=0;j<SIZE;++j){
+
+                // Ignore pieces that we can't move in the current turn
                 if (black && board[i][j].getColor()!=Color::Black) continue;
                 if (!black && board[i][j].getColor()!=Color::White) continue;
+
+                // Iterate through all the squares to find a destination
                 for (int k=0;k<SIZE;++k){
                     for (int l=0;l<SIZE;++l){
+                        
+                        // Check if the piece can move to the destination
                         if (isValidMove(i,j,k,l)){
+                            
+                            // Update the board
                             Piece temp = board[k][l];
                             board[k][l] = board[i][j];
                             board[i][j] = Piece();
+                            // If the king is moved, update king position
                             if (board[k][l].getType()==Type::King) updateKingPosn(k,l);
+
+                            // Check if the move makes the king safe
                             if (!isKingInCheck(black)){
+                                // Revert position as we do not want the player to know the safe move
                                 board[i][j] = board[k][l]; 
                                 board[k][l] = temp;
                                 if (board[i][j].getType()==Type::King) updateKingPosn(i,j);
                                 return false;
                             }
+
+                            // If king is not safe, revert and try next iteration.
                             board[i][j] = board[k][l]; 
                             board[k][l] = temp;
                             if (board[i][j].getType()==Type::King) updateKingPosn(i,j);
@@ -364,6 +402,7 @@ public:
                 }
             }
         }
+        // None of the moves put the king out of check
         return true;
     }
 
@@ -378,24 +417,35 @@ public:
      * @return false if the pawn move is invalid
      */
     bool isValidPawnMove(int sourceRow,int sourceCol,int destRow,int destCol){
+
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
         Color playerColor = sourcePiece.getColor();
 
+        // Can't attack own piece
         if (destPiece.getColor()==playerColor) return false;
 
         int direction = (playerColor == Color::White) ? -1:1;
 
+        // Same column movement (Cannot capture)
         if (sourceCol==destCol && destPiece.getType()==Type::None){
+            
+            // Single forward movement
             if (destRow==sourceRow+direction) return true;
+
+            // Double movement allowed if it is the pawn's first move
             if (destRow == sourceRow + 2 * direction && !sourcePiece.hasPieceMoved()) return true;
+
             return false;
         }
 
+        // Diagonal capture movement
         if ((destCol==sourceCol+1 || destCol==sourceCol-1) && destRow==sourceRow+direction){
+
+            // If enemy piece in diagonal square, then we can capture
             if ((destPiece.getType()!=Type::None)) return true;
 
-            //en passant
+            // Special case: En passant
             if (board[sourceRow][destCol].getType()==Type::Pawn && board[sourceRow][destCol].getColor()!=playerColor){
                 if(prevMove[1]==prevMove[3]-2*direction && prevMove[0]==prevMove[2] && prevMove[0]-'a'==destCol){
                     board[sourceRow][destCol]=Piece();
@@ -417,13 +467,19 @@ public:
      * @return false if the knight move is invalid
      */
     bool isValidKnightMove(int sourceRow,int sourceCol,int destRow,int destCol){
+
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
         Color playerColor = sourcePiece.getColor();
+
+        // Can't attack it's own piece
         if (destPiece.getColor()==playerColor) return false;
+
+        // L shaped move
         if ((abs(destRow-sourceRow)==2 && abs(destCol-sourceCol)==1) || (abs(destRow-sourceRow)==1 && abs(destCol-sourceCol)==2)){
             return true;
         }
+
         return false;
     }
 
@@ -438,14 +494,18 @@ public:
      * @return false if the bishop move is invalid
      */
     bool isValidBishopMove(int sourceRow,int sourceCol,int destRow,int destCol){
+
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
         Color playerColor = sourcePiece.getColor();
+
         int rowDiff= destRow-sourceRow;
         int colDiff = destCol-sourceCol;
 
+        // Can't attack own piece
         if (destPiece.getColor()==playerColor) return false;
 
+        // Destination is not in the same diagonal as source
         if (abs(rowDiff)!=abs(colDiff)) return false;
 
         int stepRow = (rowDiff > 0) ? 1 : -1; // Determine step direction for row
@@ -453,6 +513,7 @@ public:
         int checkRow = sourceRow + stepRow; 
         int checkCol = sourceCol + stepCol;
 
+        //Check for any obstructions in the diagonal
         while (checkRow != destRow && checkCol != destCol) {
             if (board[checkRow][checkCol].getType() != Type::None) // Move is blocked by a piece
                 return false; 
@@ -473,31 +534,41 @@ public:
      * @return false if the rook move is invalid 
      */
     bool isValidRookMove(int sourceRow,int sourceCol,int destRow,int destCol){
+
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
         Color playerColor = sourcePiece.getColor();
 
+        // Can't attack own piece
         if (destPiece.getColor()==playerColor) return false;
 
+        // Vertical movement, same column
         if (destCol==sourceCol){
-            int direction = destRow>sourceRow ? 1:-1;
+            int direction = destRow>sourceRow ? 1:-1; // Determine direction of movement
             int checkRow = sourceRow+direction;
+
+            // Check for obstructions
             while (checkRow!=destRow){
-                if (board[checkRow][sourceCol].getType()!=Type::None) return false;
+                if (board[checkRow][sourceCol].getType()!=Type::None) return false; // Move is blocked by a piece
                 checkRow += direction;
             }
             return true;
         }
+
+        // Horizontal movement, same row
         if (destRow==sourceRow){
-            int direction = destCol>sourceCol ? 1:-1;
+            int direction = destCol>sourceCol ? 1:-1; // Determine direction of movement
             int checkCol = sourceCol+direction;
+
+            // Check for obstructions
             while (checkCol!=destCol){
-                if (board[sourceRow][checkCol].getType()!=Type::None) return false;
+                if (board[sourceRow][checkCol].getType()!=Type::None) return false; // Move is blocked by a piece
                 checkCol += direction;
             }
             return true;
         }
 
+        // Movement is neither horizontal/vertical
         return false;
     }
 
@@ -512,6 +583,7 @@ public:
      * @return false if the queen move is invalid
      */
     bool isValidQueenMove(int sourceRow,int sourceCol,int destRow,int destCol){
+        // Check if the destination can be reached either by diagonal or straight move
         return (isValidBishopMove(sourceRow,sourceCol,destRow,destCol) || isValidRookMove(sourceRow,sourceCol,destRow,destCol));
     }
 
@@ -526,75 +598,117 @@ public:
      * @return false if the king move is invalid or castling under checks
      */
     bool isValidKingMove(int sourceRow,int sourceCol,int destRow,int destCol){
+
         Piece sourcePiece = board[sourceRow][sourceCol];
         Piece destPiece = board[destRow][destCol];
         Color playerColor = sourcePiece.getColor();
 
+        // Can't attack own piece
         if (destPiece.getColor()==playerColor) return false;
 
         int rowDiff= destRow-sourceRow;
         int colDiff = destCol-sourceCol;
 
         //Castling time
-        if (!sourcePiece.hasPieceMoved() && rowDiff==0){ //since piece hasnt moved,it should be in its own row
+        if (!sourcePiece.hasPieceMoved() && rowDiff==0){ //since piece hasnt moved,it should be in its own home row
+
+            // King side castling
             if (destCol==2){
+
+                // Squares between castle is blocked
                 if (board[sourceRow][3].getType()!=Type::None || board[sourceRow][2].getType()!=Type::None || board[sourceRow][1].getType()!=Type::None) return false;
+                
+                // Can't castle while in check
                 if (isKingInCheck(playerColor==Color::Black)) return false;
+
+                // Can only castle if the king side rook is untouched
                 if (board[sourceRow][0].getType()==Type::Rook && !board[sourceRow][0].hasPieceMoved()){
+
+                    // Update one square towards castle
                     Piece rook = board[sourceRow][0];
                     board[sourceRow][3]= sourcePiece;
                     board[sourceRow][4]= Piece();
                     updateKingPosn(sourceRow,3);
+
+                    // Check if king is in check, if yes revert and castling is not possible
                     if (isKingInCheck(playerColor==Color::Black)){
                         board[sourceRow][4]=sourcePiece;
                         board[sourceRow][3]=Piece();
                         updateKingPosn(sourceRow,4);
                         return false;
                     }
+
+                    // Move to the castle square
                     board[sourceRow][2]= sourcePiece;
                     board[sourceRow][3]= Piece();
                     updateKingPosn(sourceRow,2);
+
+                    // Check if king is in check, if yes revert and castling is not possible
                     if (isKingInCheck(playerColor==Color::Black)){
                         board[sourceRow][4]=sourcePiece;
                         board[sourceRow][2]=Piece();
                         updateKingPosn(sourceRow,4);
                         return false;
                     }
+
+                    // This reverting part im not sure if we need, revert since it will castled by the move function anyways if valid
                     board[sourceRow][4]=sourcePiece;
                     board[sourceRow][2]=Piece();
                     updateKingPosn(sourceRow,4);
+
+                    // Move the rook
                     rook.setMoved();
                     board[sourceRow][3]= rook;
                     board[sourceRow][0]= Piece();
                     return true;
                 }
             }
+
+            //Queen side castling
             else if (destCol==6){
+
+                // Squares between castle is blocked
                 if (board[sourceRow][5].getType()!=Type::None || board[sourceRow][6].getType()!=Type::None) return false;
+
+                // Can't castle while in check
                 if (isKingInCheck(playerColor==Color::Black)) return false;
+
+                // Can only castle if the queen side rook is untouched
                 if (board[sourceRow][7].getType()==Type::Rook && !board[sourceRow][7].hasPieceMoved()){
+
+                    // Update one square towards castle
                     Piece rook = board[sourceRow][7];
                     board[sourceRow][5]= sourcePiece;
                     board[sourceRow][4]= Piece();
                     updateKingPosn(sourceRow,5);
+
+                    // Check if king is in check, if yes revert and castling is not possible
                     if (isKingInCheck(playerColor==Color::Black)){
                         board[sourceRow][4]=sourcePiece;
                         board[sourceRow][5]=Piece();
                         updateKingPosn(sourceRow,4);
                         return false;
                     }
+
+                    // Move to castle square
                     board[sourceRow][6]= sourcePiece;
                     board[sourceRow][5]= Piece();
                     updateKingPosn(sourceRow,6);
+
+                    // Check if king is in check, if yes revert and castling is not possible
                     if (isKingInCheck(playerColor==Color::Black)){
                         board[sourceRow][4]=sourcePiece;
                         board[sourceRow][6]=Piece();
                         updateKingPosn(sourceRow,4);
                         return false;
                     }
+
+                    // This reverting part im not sure if we need, revert since it will castled by the move function anyways if valid
                     board[sourceRow][4]=sourcePiece;
                     board[sourceRow][6]=Piece();
                     updateKingPosn(sourceRow,4);
+
+                    // Move the rook
                     rook.setMoved();
                     board[sourceRow][5]= rook;
                     board[sourceRow][7]= Piece();
@@ -603,6 +717,7 @@ public:
             }
         }
 
+        // If the move is not within 1 sqaure of the king, it is invalid
         if (abs(rowDiff)>1 || abs(colDiff)>1) return false;
 
         return true;
@@ -625,10 +740,13 @@ int main()
 {
     // Create the main board
     Chessboard game;
+
     // Print initial board
     game.printBoard();
+
     // Create an array to store moves
     std::vector<std::string> moveLog;
+
     // Boolean to keep track of moves
     bool black=false;
 
