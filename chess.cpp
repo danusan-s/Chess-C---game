@@ -727,7 +727,7 @@ public:
 /**
  * @brief Prints out the logs
  * 
- * @param moveLog Array containg the logs
+ * @param moveLog Array containing the logs
  */
 void printLogs(std::vector<std::string>& moveLog){
     std::cout<< "Move Log:" << std::endl;
@@ -772,8 +772,11 @@ int main()
             if (game.isKingInCheck(black)){
                 // If king is in checkmate, print out log and exit
                 if(game.isKingInCheckmate(black)){
-                    std::cout<<"Checkmate! "<<(black?"Black":"White")<<" wins!"<<std::endl;
-                    printLogs(moveLog);
+                    std::cout<<"Checkmate! "<<(black?"White":"Black")<<" wins!"<<std::endl;
+                    std::cout<<"Do you wish to see the logs ? (y/n)"<<std::endl;
+                    char choice;
+                    std::cin >> choice;
+                    if (choice=='y') printLogs(moveLog);
                     break;
                 }
                 std::cout << "Check" << std::endl;
