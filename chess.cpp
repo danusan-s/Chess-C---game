@@ -75,7 +75,7 @@ private:
 public:
     //Initializes the chess board
     Chessboard()
-    {
+    {   
         blackKingRow = 0;
         blackKingCol = 4;
         whiteKingRow = 7;
@@ -111,6 +111,8 @@ public:
         board[0][4] = Piece(Type::King, Color::Black);
         board[7][4] = Piece(Type::King, Color::White);
     }
+
+    // Prints out the current state of the board using unicode characters to represent pieces
     void printBoard()
     {
         for (int i = 0; i < SIZE; ++i)
@@ -148,6 +150,74 @@ public:
             std::cout << std::endl;
         }
         std::cout << "# a b c d e f g h"<<std::endl;
+    }
+    /**
+     * @brief Designed to count the number of possibilites and stuff to compare with perft 
+     *        but unforunately also counts duplicates so it doesnt work.
+     * @param depth How many more moves to compute
+     * @param black Indicates if it is black's turn
+     * @param count No. of possibilites
+     * @param checks No. of checks
+     * @param captures No. of captures
+     * @param checkmates No. of checkmates
+     */
+    void countPossibilites(int depth,bool black,int& count,int& checks,int& captures,int& checkmates){
+        if (depth==0){
+            return;
+        }
+        for (int i=0;i<SIZE;++i){
+            for (int j=0;j<SIZE;++j){
+                // Ignore pieces that we can't move in the current turn
+                if (black && board[i][j].getColor()!=Color::Black) continue;
+                if (!black && board[i][j].getColor()!=Color::White) continue;
+
+                // Iterate through all the squares to find a destination
+                for (int k=0;k<SIZE;++k){
+                    for (int l=0;l<SIZE;++l){
+                        
+                        // Check if the piece can move to the destination
+                        if (isValidMove(i,j,k,l)){
+                            
+                            // Update the board
+                            Piece temp = board[k][l];
+                            board[k][l] = board[i][j];
+                            board[i][j] = Piece();
+                            // If the king is moved, update king position
+                            if (board[k][l].getType()==Type::King) updateKingPosn(k,l);
+
+                            // Check if the move puts the king in check
+                            if (isKingInCheck(black)){
+                                board[i][j] = board[k][l]; 
+                                board[k][l] = temp;
+                                if (board[i][j].getType()==Type::King) updateKingPosn(i,j);
+                                continue;
+                            }
+                            if (temp.getType()!=Type::None) captures++;
+                            if (isKingInCheck(!black)){
+                                if (isKingInCheckmate(!black)){
+                                    checkmates++;
+                                    board[i][j] = board[k][l]; 
+                                    board[k][l] = temp;
+                                    if (board[i][j].getType()==Type::King) updateKingPosn(i,j);
+                                    continue;
+                                }
+                                checks++;
+                            }
+                            count++;
+                            countPossibilites(depth-1,!black,count,checks,captures,checkmates);
+                            // If king is not safe, revert and try next iteration.
+                            board[i][j] = board[k][l]; 
+                            board[k][l] = temp;
+                            if (board[i][j].getType()==Type::King) updateKingPosn(i,j);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    std::string predictBestMove(bool black,int depth){
+        return "";
     }
 
     /**
@@ -208,11 +278,11 @@ public:
 
             // If the king is in check after the move, it is invalid and we should revert back
             if (isKingInCheck(black)){
-                if (board[destRow][destCol].getType()==Type::King){
-                    updateKingPosn(sourceRow,sourceCol);  
-                }
                 board[sourceRow][sourceCol] = board[destRow][destCol];
                 board[destRow][destCol]= temp;
+                if (board[sourceRow][sourceCol].getType()==Type::King){
+                    updateKingPosn(sourceRow,sourceCol);  
+                }
                 std::cout << "That move puts your king in check" << std::endl;
 
                 return false;
@@ -335,6 +405,7 @@ public:
         if (black){
             for (int i=0;i<SIZE;++i){
                 for (int j=0;j<SIZE;++j){
+                    if (board[i][j].getColor()!=Color::White) continue;
                     if (isValidMove(i,j,blackKingRow,blackKingCol)){
                         return true;
                     }
@@ -344,6 +415,7 @@ public:
         else{
             for (int i=0;i<SIZE;++i){
                 for (int j=0;j<SIZE;++j){
+                    if (board[i][j].getColor()!=Color::Black) continue;
                     if (isValidMove(i,j,whiteKingRow,whiteKingCol)){
                         return true;
                     }
@@ -749,6 +821,21 @@ int main()
 
     // Boolean to keep track of moves
     bool black=false;
+
+    int prev=0;
+    int temp=0;
+
+    for (int i=1;i<6;++i){
+        int count=0;
+        int checks=0;
+        int captures=0;
+        int checkmates=0;
+        game.countPossibilites(i,black,count,checks,captures,checkmates);
+        temp=count;
+        count-=prev;
+        prev=temp;
+        std::cout <<"Depth: "<< i << " Possibilities: "<< count<<" Captures: "<<captures<<" Checks: " <<checks<<" Checkmates: "<<checkmates<<std::endl;
+    }
 
     while (true){
         // Get input from user
